@@ -1,0 +1,45 @@
+.mode-switcher {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.mode-switcher button {
+  padding: 10px 20px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  color: #2d3748;
+}
+
+.mode-switcher button:hover {
+  border-color: #cbd5e0;
+  background: #f7fafc;
+}
+
+.mode-switcher button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.logout-btn {
+  background: #e53e3e !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+.logout-btn:hover {
+  background: #c53030 !important;
+}
