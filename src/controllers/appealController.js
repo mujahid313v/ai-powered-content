@@ -1,5 +1,26 @@
 const pool = require('../db/pool');
 
+exports.getPendingAppeals = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT a.*, cs.content_type, cs.content_text, cs.content_url, cs.submitted_at
+       FROM appeals a
+       JOIN content_submissions cs ON a.content_id = cs.id
+       WHERE a.status = 'pending'
+       ORDER BY a.created_at DESC`,
+      []
+    );
+    
+    res.json({
+      appeals: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('Get pending appeals error:', error);
+    res.status(500).json({ error: 'Failed to retrieve appeals' });
+  }
+};
+
 exports.submitAppeal = async (req, res) => {
   const { content_id, user_reason } = req.body;
   
@@ -77,13 +98,13 @@ exports.resolveAppeal = async (req, res) => {
   const { id } = req.params;
   const { decision, resolution_notes } = req.body;
   
+  console.log(`[RESOLVE APPEAL] ID: ${id}, Decision: ${decision}`);
+  
   if (!['approved', 'rejected'].includes(decision)) {
     return res.status(400).json({ error: 'Decision must be approved or rejected' });
   }
   
   try {
-    await pool.query('BEGIN');
-    
     // Get content_id from appeal
     const appealResult = await pool.query(
       `SELECT content_id FROM appeals WHERE id = $1`,
@@ -91,38 +112,32 @@ exports.resolveAppeal = async (req, res) => {
     );
     
     if (appealResult.rows.length === 0) {
-      await pool.query('ROLLBACK');
       return res.status(404).json({ error: 'Appeal not found' });
     }
     
     const contentId = appealResult.rows[0].content_id;
+    console.log(`[RESOLVE APPEAL] Content ID: ${contentId}`);
     
-    // Update appeal
+    // Update appeal status
     await pool.query(
-      `UPDATE appeals SET status = $1, resolution_notes = $2, resolved_at = NOW() WHERE id = $3`,
-      [decision, resolution_notes, id]
+      `UPDATE appeals SET status = $1, resolution_notes = $2, resolved_by = $3, resolved_at = datetime('now') WHERE id = $4`,
+      [decision, resolution_notes, req.user.userId, id]
     );
     
     // Update content if appeal approved
     if (decision === 'approved') {
       await pool.query(
-        `UPDATE content_submissions SET status = 'approved' WHERE id = $1`,
+        `UPDATE content_submissions SET status = 'approved', processed_at = datetime('now') WHERE id = $1`,
         [contentId]
       );
+      console.log(`[RESOLVE APPEAL] Content ${contentId} approved`);
+    } else {
+      console.log(`[RESOLVE APPEAL] Appeal denied, content remains rejected`);
     }
-    
-    // Log action
-    await pool.query(
-      `INSERT INTO audit_logs (action, content_id, details) VALUES ($1, $2, $3)`,
-      ['resolve_appeal', contentId, { appeal_id: id, decision, resolution_notes }]
-    );
-    
-    await pool.query('COMMIT');
     
     res.json({ message: 'Appeal resolved', appeal_id: id, decision });
   } catch (error) {
-    await pool.query('ROLLBACK');
-    console.error('Resolve appeal error:', error);
-    res.status(500).json({ error: 'Failed to resolve appeal' });
+    console.error('[ERROR] Resolve appeal error:', error);
+    res.status(500).json({ error: 'Failed to resolve appeal', details: error.message });
   }
 };

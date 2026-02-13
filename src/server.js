@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const contentRoutes = require('./routes/content');
+const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
 const appealRoutes = require('./routes/appeals');
 const analyticsRoutes = require('./routes/analytics');
@@ -34,10 +35,14 @@ app.use('/api/', limiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/content', uploadRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/appeals', appealRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

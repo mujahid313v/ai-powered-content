@@ -12,9 +12,8 @@ function Appeals() {
 
   const loadAppeals = async () => {
     try {
-      const response = await api.get('/admin/queue?status=pending');
-      const appealItems = response.data.items.filter(item => item.priority >= 9);
-      setAppeals(appealItems);
+      const response = await api.get('/appeals/pending');
+      setAppeals(response.data.appeals);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load appeals:', error);
@@ -53,18 +52,28 @@ function Appeals() {
       {appeals.map(appeal => (
         <div key={appeal.id} className="content-card">
           <div className="content-header">
-            <span className="content-type">Appeal #{appeal.id}</span>
+            <span className="content-type">{appeal.content_type} - Appeal #{appeal.id}</span>
             <span style={{ fontSize: '12px', color: '#718096' }}>
-              Priority: {appeal.priority}
+              {new Date(appeal.created_at).toLocaleDateString()}
             </span>
           </div>
 
-          {appeal.content_text && (
-            <div className="content-text">{appeal.content_text}</div>
-          )}
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Original Content:</strong>
+            {appeal.content_text && (
+              <div className="content-text" style={{ marginTop: '8px' }}>{appeal.content_text}</div>
+            )}
+            {appeal.content_url && (
+              <div style={{ marginTop: '8px' }}>
+                <a href={appeal.content_url} target="_blank" rel="noopener noreferrer">
+                  View Media →
+                </a>
+              </div>
+            )}
+          </div>
 
-          <div style={{ marginTop: '15px', padding: '15px', background: '#fffaf0', borderRadius: '6px' }}>
-            <strong>User's Appeal:</strong>
+          <div style={{ marginTop: '15px', padding: '15px', background: '#fffaf0', borderRadius: '6px', border: '1px solid #ffd700' }}>
+            <strong>User's Appeal Reason:</strong>
             <p style={{ marginTop: '8px', fontSize: '14px' }}>
               {appeal.user_reason || 'No reason provided'}
             </p>
@@ -75,13 +84,13 @@ function Appeals() {
               className="btn btn-approve"
               onClick={() => handleResolve(appeal.id, 'approved')}
             >
-              Approve Appeal
+              ✓ Approve Appeal
             </button>
             <button 
               className="btn btn-reject"
               onClick={() => handleResolve(appeal.id, 'rejected')}
             >
-              Deny Appeal
+              ✗ Deny Appeal
             </button>
           </div>
         </div>

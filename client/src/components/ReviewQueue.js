@@ -23,8 +23,9 @@ function ReviewQueue() {
   const handleApprove = async (id) => {
     try {
       await approveContent(id, 'Approved by moderator');
-      setItems(items.filter(item => item.content_id !== id));
+      setItems(items.filter(item => item.id !== id));
     } catch (error) {
+      console.error('Approve error:', error);
       alert('Failed to approve content');
     }
   };
@@ -35,8 +36,9 @@ function ReviewQueue() {
     
     try {
       await rejectContent(id, reason);
-      setItems(items.filter(item => item.content_id !== id));
+      setItems(items.filter(item => item.id !== id));
     } catch (error) {
+      console.error('Reject error:', error);
       alert('Failed to reject content');
     }
   };
@@ -86,13 +88,13 @@ function ReviewQueue() {
           <div className="actions">
             <button 
               className="btn btn-approve"
-              onClick={() => handleApprove(item.content_id)}
+              onClick={() => handleApprove(item.id)}
             >
               ✓ Approve
             </button>
             <button 
               className="btn btn-reject"
-              onClick={() => handleReject(item.content_id)}
+              onClick={() => handleReject(item.id)}
             >
               ✗ Reject
             </button>
