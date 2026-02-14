@@ -4,6 +4,7 @@ import UserApp from './UserApp';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Hero3D from './components/Hero3D';
+import Analytics from './components/Analytics';
 import './Portal.css';
 
 function Portal() {

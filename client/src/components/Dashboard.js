@@ -14,7 +14,7 @@ function Dashboard() {
   const loadStats = async () => {
     try {
       const response = await getAnalytics();
-      setStats(response.data.last_24_hours);
+      setStats(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -25,50 +25,86 @@ function Dashboard() {
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (!stats) return <div className="empty">No data available</div>;
 
+  const { overall, last_24_hours, performance, appeals } = stats;
+
   return (
     <div>
-      <h2 style={{ marginBottom: '20px', fontSize: '20px' }}>Last 24 Hours</h2>
+      <h2 style={{ marginBottom: '20px', fontSize: '20px' }}>Dashboard Overview</h2>
       
       <div className="stats-grid">
         <div className="stat-card">
+          <h3>Total Submissions</h3>
+          <div className="value" style={{ color: '#4299e1' }}>
+            {overall?.total_submissions || 0}
+          </div>
+          <div style={{ fontSize: '12px', color: '#718096', marginTop: '5px' }}>
+            {overall?.approval_rate || 0}% approval rate
+          </div>
+        </div>
+
+        <div className="stat-card">
           <h3>Pending Review</h3>
           <div className="value" style={{ color: '#ed8936' }}>
-            {stats.content.pending_count || 0}
+            {overall?.pending_count || 0}
           </div>
         </div>
 
         <div className="stat-card">
           <h3>Approved</h3>
           <div className="value" style={{ color: '#48bb78' }}>
-            {stats.content.approved_count || 0}
+            {overall?.approved_count || 0}
           </div>
         </div>
 
         <div className="stat-card">
           <h3>Rejected</h3>
           <div className="value" style={{ color: '#e53e3e' }}>
-            {stats.content.rejected_count || 0}
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <h3>Under Review</h3>
-          <div className="value" style={{ color: '#4299e1' }}>
-            {stats.content.under_review_count || 0}
+            {overall?.rejected_count || 0}
           </div>
         </div>
 
         <div className="stat-card">
           <h3>Avg Processing Time</h3>
           <div className="value" style={{ fontSize: '24px' }}>
-            {stats.avg_processing_time_seconds}s
+            {performance?.avg_processing_time_formatted || '0s'}
           </div>
         </div>
 
         <div className="stat-card">
           <h3>Pending Appeals</h3>
           <div className="value" style={{ color: '#805ad5' }}>
-            {stats.appeals.pending_appeals || 0}
+            {appeals?.pending_appeals || 0}
+          </div>
+        </div>
+      </div>
+
+      <h3 style={{ marginTop: '30px', marginBottom: '15px', fontSize: '18px' }}>Last 24 Hours</h3>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <div className="stat-card">
+          <h3>New Submissions</h3>
+          <div className="value" style={{ color: '#4299e1' }}>
+            {last_24_hours?.total_24h || 0}
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <h3>Approved</h3>
+          <div className="value" style={{ color: '#48bb78' }}>
+            {last_24_hours?.approved_24h || 0}
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <h3>Rejected</h3>
+          <div className="value" style={{ color: '#e53e3e' }}>
+            {last_24_hours?.rejected_24h || 0}
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <h3>Pending</h3>
+          <div className="value" style={{ color: '#ed8936' }}>
+            {last_24_hours?.pending_24h || 0}
           </div>
         </div>
       </div>
