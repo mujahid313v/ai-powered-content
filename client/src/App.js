@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Dashboard from './components/Dashboard';
 import ReviewQueue from './components/ReviewQueue';
 import Appeals from './components/Appeals';
+import Analytics from './components/Analytics';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -29,12 +30,19 @@ function App() {
           >
             Appeals
           </button>
+          <button 
+            className={activeTab === 'analytics' ? 'active' : ''}
+            onClick={() => setActiveTab('analytics')}
+          >
+            📊 Analytics
+          </button>
         </div>
       </div>
 
       {activeTab === 'dashboard' && <Dashboard />}
       {activeTab === 'queue' && <ReviewQueue />}
       {activeTab === 'appeals' && <Appeals />}
+      {activeTab === 'analytics' && <Analytics />}
     </div>
   );
 }
