@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useSocket } from '../context/SocketContext';
 import { getReviewQueue, approveContent, rejectContent } from '../api';
 
 function ReviewQueue() {
+  const { queueStats, refreshQueueStats } = useSocket();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadQueue();
-  }, []);
+    // Refresh queue when stats update from socket
+  }, [queueStats]);
 
   const loadQueue = async () => {
     try {
@@ -24,6 +27,7 @@ function ReviewQueue() {
     try {
       await approveContent(id, 'Approved by moderator');
       setItems(items.filter(item => item.id !== id));
+      refreshQueueStats();
     } catch (error) {
       console.error('Approve error:', error);
       alert('Failed to approve content');
@@ -33,10 +37,11 @@ function ReviewQueue() {
   const handleReject = async (id) => {
     const reason = prompt('Rejection reason:');
     if (!reason) return;
-    
+
     try {
       await rejectContent(id, reason);
       setItems(items.filter(item => item.id !== id));
+      refreshQueueStats();
     } catch (error) {
       console.error('Reject error:', error);
       alert('Failed to reject content');
@@ -49,15 +54,34 @@ function ReviewQueue() {
       <div className="empty">
         <h3>✅ All caught up!</h3>
         <p>No items in the review queue</p>
+        <div className="queue-stats">
+          <span>Pending: {queueStats.pendingCount || 0}</span>
+          <span>Under Review: {queueStats.reviewCount || 0}</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 style={{ marginBottom: '20px', fontSize: '20px' }}>
-        Review Queue ({items.length} items)
-      </h2>
+      <div className="review-queue-header">
+        <h2 style={{ marginBottom: '10px', fontSize: '20px' }}>
+          Review Queue ({items.length} items)
+        </h2>
+        <div className="live-queue-stats">
+          <span className="stat-item">
+            <span className="stat-label">Pending:</span>
+            <span className="stat-value">{queueStats.pendingCount || items.length}</span>
+          </span>
+          <span className="stat-item">
+            <span className="stat-label">Under Review:</span>
+            <span className="stat-value">{queueStats.reviewCount || 0}</span>
+          </span>
+          <span className="live-indicator">
+            <span className="live-dot"></span> LIVE
+          </span>
+        </div>
+      </div>
 
       {items.map(item => (
         <div key={item.id} className="content-card">
@@ -86,13 +110,13 @@ function ReviewQueue() {
           </div>
 
           <div className="actions">
-            <button 
+            <button
               className="btn btn-approve"
               onClick={() => handleApprove(item.id)}
             >
               ✓ Approve
             </button>
-            <button 
+            <button
               className="btn btn-reject"
               onClick={() => handleReject(item.id)}
             >

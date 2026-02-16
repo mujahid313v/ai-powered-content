@@ -100,6 +100,23 @@ CREATE TABLE IF NOT EXISTS analytics_daily (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  type TEXT NOT NULL,
+  title TEXT,
+  message TEXT,
+  priority TEXT DEFAULT 'medium',
+  is_read INTEGER DEFAULT 0,
+  related_content_id INTEGER,
+  related_appeal_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (related_content_id) REFERENCES content_submissions(id),
+  FOREIGN KEY (related_appeal_id) REFERENCES appeals(id)
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_content_status ON content_submissions(status);
 CREATE INDEX IF NOT EXISTS idx_content_submitted_at ON content_submissions(submitted_at);
@@ -107,3 +124,6 @@ CREATE INDEX IF NOT EXISTS idx_moderation_content_id ON moderation_results(conte
 CREATE INDEX IF NOT EXISTS idx_review_queue_status ON review_queue(status);
 CREATE INDEX IF NOT EXISTS idx_appeals_status ON appeals(status);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);

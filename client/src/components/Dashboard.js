@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useSocket } from '../context/SocketContext';
 import { getAnalytics } from '../api';
 
 function Dashboard() {
+  const { queueStats, isConnected, connectionStatus } = useSocket();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,8 +31,14 @@ function Dashboard() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: '20px', fontSize: '20px' }}>Dashboard Overview</h2>
-      
+      <div className="dashboard-header">
+        <h2 style={{ marginBottom: '10px', fontSize: '20px' }}>Dashboard Overview</h2>
+        <div className={`connection-indicator connection-indicator-${connectionStatus}`}>
+          <span className="connection-dot"></span>
+          <span>{isConnected ? 'Live Updates Active' : 'Disconnected'}</span>
+        </div>
+      </div>
+
       <div className="stats-grid">
         <div className="stat-card">
           <h3>Total Submissions</h3>
@@ -42,10 +50,13 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="stat-card">
-          <h3>Pending Review</h3>
+        <div className="stat-card live-stat">
+          <h3>
+            Pending Review
+            <span className="live-badge">LIVE</span>
+          </h3>
           <div className="value" style={{ color: '#ed8936' }}>
-            {overall?.pending_count || 0}
+            {queueStats.pendingCount || overall?.pending_count || 0}
           </div>
         </div>
 
@@ -60,6 +71,26 @@ function Dashboard() {
           <h3>Rejected</h3>
           <div className="value" style={{ color: '#e53e3e' }}>
             {overall?.rejected_count || 0}
+          </div>
+        </div>
+
+        <div className="stat-card live-stat">
+          <h3>
+            Under Review
+            <span className="live-badge">LIVE</span>
+          </h3>
+          <div className="value" style={{ color: '#ed8936' }}>
+            {queueStats.reviewCount || 0}
+          </div>
+        </div>
+
+        <div className="stat-card live-stat">
+          <h3>
+            Today's Submissions
+            <span className="live-badge">LIVE</span>
+          </h3>
+          <div className="value" style={{ color: '#4299e1' }}>
+            {queueStats.totalToday || 0}
           </div>
         </div>
 

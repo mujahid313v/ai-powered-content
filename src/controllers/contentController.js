@@ -1,13 +1,14 @@
 const pool = require('../db/pool');
-const { moderationQueue } = require('../services/queueService');
+const { moderationQueue, isQueueAvailable } = require('../services/queueService');
+const notificationService = require('../services/notificationService');
 
 exports.submitContent = async (req, res) => {
   const { content_type, content_text, content_url, submitter_id, metadata } = req.body;
-  
+
   try {
     // Get user ID from authenticated user (from JWT token)
     const userId = req.user ? req.user.id : null;
-    
+
     // Insert content submission (metadata as JSON string for SQLite)
     const metadataStr = metadata ? JSON.stringify(metadata) : null;
     const result = await pool.query(
@@ -15,26 +16,46 @@ exports.submitContent = async (req, res) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING id`,
       [content_type, content_text, content_url, userId, metadataStr]
     );
-    
+
     const contentId = result.rows[0].id;
-    
+
+    // Determine priority based on content type and submitter history
+    const priority = content_type === 'video' ? 'high' : 'medium';
+
     // Add to processing queue (skip if Redis not available)
-    try {
-      await moderationQueue.add({
-        contentId,
-        contentType: content_type,
-        contentText: content_text,
-        contentUrl: content_url
-      });
-    } catch (queueError) {
-      console.log('Queue not available, content will need manual review');
-      // Update status to under_review if queue fails
+    if (isQueueAvailable() && moderationQueue) {
+      try {
+        await moderationQueue.add({
+          contentId,
+          contentType: content_type,
+          contentText: content_text,
+          contentUrl: content_url
+        });
+      } catch (queueError) {
+        console.log('Queue not available, content will need manual review');
+        // Update status to under_review if queue fails
+        await pool.query(
+          `UPDATE content_submissions SET status = $1 WHERE id = $2`,
+          ['under_review', contentId]
+        );
+      }
+    } else {
+      console.log('Queue not initialized, content will need manual review');
+      // Update status to under_review if queue is not available
       await pool.query(
         `UPDATE content_submissions SET status = $1 WHERE id = $2`,
         ['under_review', contentId]
       );
     }
-    
+
+    // Emit real-time notification for new content
+    await notificationService.notifyContentSubmitted({
+      contentId,
+      contentType: content_type,
+      priority,
+      submitterId: userId
+    });
+
     res.status(202).json({
       message: 'Content submitted for moderation',
       content_id: contentId,
@@ -71,41 +92,58 @@ exports.getContentStatus = async (req, res) => {
 
 exports.batchSubmit = async (req, res) => {
   const { items } = req.body;
-  
+
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'items must be a non-empty array' });
   }
-  
+
   try {
     const contentIds = [];
     const userId = req.user ? req.user.id : null;
-    
+    const queueAvailable = isQueueAvailable() && moderationQueue;
+
     for (const item of items) {
       const result = await pool.query(
         `INSERT INTO content_submissions (content_type, content_text, content_url, submitter_id)
          VALUES ($1, $2, $3, $4) RETURNING id`,
         [item.content_type, item.content_text, item.content_url, userId]
       );
-      
+
       const contentId = result.rows[0].id;
       contentIds.push(contentId);
-      
-      try {
-        await moderationQueue.add({
-          contentId,
-          contentType: item.content_type,
-          contentText: item.content_text,
-          contentUrl: item.content_url
-        });
-      } catch (queueError) {
-        // Queue not available, mark for manual review
+
+      if (queueAvailable) {
+        try {
+          await moderationQueue.add({
+            contentId,
+            contentType: item.content_type,
+            contentText: item.content_text,
+            contentUrl: item.content_url
+          });
+        } catch (queueError) {
+          // Queue not available, mark for manual review
+          await pool.query(
+            `UPDATE content_submissions SET status = $1 WHERE id = $2`,
+            ['under_review', contentId]
+          );
+        }
+      } else {
+        // Queue not initialized, mark for manual review
         await pool.query(
           `UPDATE content_submissions SET status = $1 WHERE id = $2`,
           ['under_review', contentId]
         );
       }
+
+      // Emit notification for each submission
+      await notificationService.notifyContentSubmitted({
+        contentId,
+        contentType: item.content_type,
+        priority: item.content_type === 'video' ? 'high' : 'medium',
+        submitterId: userId
+      });
     }
-    
+
     res.status(202).json({
       message: `${contentIds.length} items submitted for moderation`,
       content_ids: contentIds
