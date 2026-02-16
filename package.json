@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd client && npm install",
     "migrate": "node src/db/migrate-sqlite.js",
     "migrate:pg": "node src/db/migrate.js",
     "create-admin": "node src/scripts/createAdmin.js"
@@ -23,7 +26,8 @@
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^1.4.5-lts.1",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

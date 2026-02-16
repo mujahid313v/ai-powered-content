@@ -10,6 +10,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.3",
+    "socket.io-client": "^4.8.3",
     "three": "^0.182.0"
   },
   "scripts": {
